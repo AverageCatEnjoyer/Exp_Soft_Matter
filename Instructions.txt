@@ -1,0 +1,9 @@
+Calculate:
+
+1) The oscillation frequency of the disk.
+2) The average angular velocity of the particles as a function of their distance from the centre of the disk.
+
+Info: 
+- radius of the disk, R=50 micron
+- radius of the particles r=1.4 micron
+- acquisition speed 30 fps 
