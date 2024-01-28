@@ -34,6 +34,7 @@ total_frames = len(FRAME_NAMES)
 first_frame = cv2.imread(os.path.join(frames_directory, FRAME_NAMES[0]))
 height, width, layers = first_frame.shape
 
+
 #------------------------------------------------------------------------------------
 #testing
 
@@ -52,8 +53,9 @@ height, width, layers = first_frame.shape
 # exit()
 #------------------------------------------------------------------------------------
 
+
 # Create a VideoWriter object with 30 fps
-# video_writer = cv2.VideoWriter(output_path+"video.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (width, height), isColor=True)
+video_writer = cv2.VideoWriter(output_path+"video.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (width, height), isColor=True)
 
 # Loop through each frame and write it to the video
 for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
@@ -69,16 +71,28 @@ for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
     # apply gaussian blur to reduce noise and threshhold
     blurred_frame = cv2.GaussianBlur(gray_frame, (7, 7), 0)
 
-    # detect circles
+    # # detect particles
+    # circles = cv2.HoughCircles(
+    #     blurred_frame,
+    #     cv2.HOUGH_GRADIENT,
+    #     dp=1,
+    #     minDist=5,
+    #     param1=50,
+    #     param2=10,
+    #     minRadius=4,
+    #     maxRadius=9
+    # )
+
+    # detect holes
     circles = cv2.HoughCircles(
         blurred_frame,
         cv2.HOUGH_GRADIENT,
         dp=1,
-        minDist=5,
+        minDist=50,
         param1=50,
         param2=10,
-        minRadius=4,
-        maxRadius=9
+        minRadius=35,
+        maxRadius=35
     )
 
     # draw circles into image
@@ -90,7 +104,7 @@ for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
             DUMMY.append((frame_number, circle_number, i[0], i[1])) # (frame_number,particle_number,x,y)
 
             # draw outer circle
-            # cv2.circle(image, (i[0], i[1]), i[2], (0, 255, 0), 2)
+            cv2.circle(frame, (i[0], i[1]), i[2], (0, 255, 0), 2)
 
             # draw center
             cv2.circle(frame, (i[0], i[1]), 2, (0, 0, 255), 3)
@@ -99,21 +113,19 @@ for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
 
     # cv2.imshow('Frame', frame)
     # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
     # exit()
 
     # save circle positions into array
-
     POSITIONS.append(np.array(DUMMY))
 
     # print(POSITIONS)
 
     # Write the frame to the video
-    # video_writer.write(frame)
+    video_writer.write(frame)
 
-write_positions_to_txt(POSITIONS, output_path+'positions.txt')
 
-# np.savetxt(output_path+'positions.txt',POSITIONS.flatten())
+# save positions in chosen shape
+write_positions_to_txt(POSITIONS, output_path+'holes.txt')
 
 # Release videowriter object
-# video_writer.release()
+video_writer.release()
