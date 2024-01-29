@@ -30,11 +30,10 @@ def read_positions_from_txt(filename):
 # -----------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------
 
-MIDDLE = (1006.23,987.48) #x,y values of middle point
+read_positions_from_txt(output_path+'middle.txt')
 
-# read_positions_from_txt(output_path+'holes.txt')
-read_positions_from_txt(output_path+'particles1.txt')
-
+mean_x = np.mean(X_COORDS)
+mean_y = np.mean(Y_COORDS)
 
 # create particle dataframe
 PARTICLE_DATA = pd.DataFrame({'frame': FRAMES, 'particle': PARTICLES, 'x': X_COORDS, 'y': Y_COORDS})
@@ -47,58 +46,14 @@ max_displacement = 5
 linked_particles = tp.link_df(PARTICLE_DATA, search_range=max_displacement, memory=1)
 
 # Filter tracks based on minimum length
-min_track_length = 890
+min_track_length = 3
 filtered_tracks = tp.filter_stubs(linked_particles, min_track_length)
 
-# group by particles
-grouped_trajectories = filtered_tracks.groupby('particle')
-FRAMES_RADII_ANGLES = []
-for particle_id, trajectory in grouped_trajectories:
-    X_Y = trajectory.values[:,2:] - MIDDLE
-    DUMMY=[] # for storing radii and angles
-    for i in range(len(X_Y)):
-        # find angle
-        r = X_Y[i,0]**2 + X_Y[i,1]**2
-        if X_Y[i,1] >= 0:
-            phi = np.arccos(X_Y[i,0]/r)
-        else:
-            phi = 2*np.pi - np.arccos(X_Y[i,0]/r)
-        DUMMY.append((i,r,phi))
-    FRAMES_RADII_ANGLES.append(DUMMY)
-
-# calculate dphi/dt
-R_DPHI=[]
-for f_r_phi in FRAMES_RADII_ANGLES:
-    f_r_phi = np.array(f_r_phi)
-    DUMMY=[]
-    for i in range(len(f_r_phi)-30):
-        dphi = f_r_phi[i+30,2] - f_r_phi[i,2] #phi difference after 1 second = 30 frames
-        r = f_r_phi[i,1]
-        DUMMY.append((r,dphi))
-    R_DPHI.append(list(DUMMY))
-
-# average over radius and angular velocity
-R_OMEGA_MEAN=[]
-for r_dphi in R_DPHI:
-    r_dphi = np.array(r_dphi)
-    omega_mean = np.mean(r_dphi[:,1])
-    r_mean = np.mean(r_dphi[:,0])
-    R_OMEGA_MEAN.append((r_mean,omega_mean))
-R_OMEGA_MEAN = np.array(R_OMEGA_MEAN)
-
-
 fig, ax = plt.subplots()
-ax.scatter(R_OMEGA_MEAN[:,0],R_OMEGA_MEAN[:,1])
+tp.plot_traj(filtered_tracks,ax=ax)
+ax.scatter(mean_x,mean_y, marker='o',c='red')
+
+info = f'($x_0$,$y_0$)=({round(mean_x,2)},{round(mean_y,2)})'
+plt.text(990,1005,info)
 
 plt.show()
-
-# tp.plot_traj(filtered_tracks)
-
-# convert into numpy array
-# TRAJECTORIES = filtered_tracks.values
-#
-#
-# fig, ax = plt.subplots()
-# # tp.plot_traj(filtered_tracks,ax=ax)
-#
-# plt.show()

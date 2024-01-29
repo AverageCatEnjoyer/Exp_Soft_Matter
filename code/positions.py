@@ -35,24 +35,6 @@ first_frame = cv2.imread(os.path.join(frames_directory, FRAME_NAMES[0]))
 height, width, layers = first_frame.shape
 
 
-#------------------------------------------------------------------------------------
-#testing
-
-# frame_path = os.path.join(frames_directory, FRAME_NAMES[0])
-# frame = cv2.imread(frame_path)
-#
-#
-# gray_frame = frame[:,:,0]
-#
-# blurred_frame = cv2.GaussianBlur(gray_frame, (7, 7), 0)
-# _, thresholded_frame = cv2.threshold(blurred_frame, 145, 255, cv2.THRESH_BINARY)
-# cv2.imshow('Original Grayscale Frame', gray_frame)
-# cv2.imshow('Thresholded Frame', thresholded_frame)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-# exit()
-#------------------------------------------------------------------------------------
-
 
 # Create a VideoWriter object with 30 fps
 video_writer = cv2.VideoWriter(output_path+"video.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (width, height), isColor=True)
@@ -71,29 +53,29 @@ for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
     # apply gaussian blur to reduce noise and threshhold
     blurred_frame = cv2.GaussianBlur(gray_frame, (7, 7), 0)
 
-    # # detect particles
-    # circles = cv2.HoughCircles(
-    #     blurred_frame,
-    #     cv2.HOUGH_GRADIENT,
-    #     dp=1,
-    #     minDist=5,
-    #     param1=50,
-    #     param2=10,
-    #     minRadius=4,
-    #     maxRadius=9
-    # )
-
-    # detect holes
+    # detect particles
     circles = cv2.HoughCircles(
         blurred_frame,
         cv2.HOUGH_GRADIENT,
         dp=1,
-        minDist=50,
+        minDist=5,
         param1=50,
         param2=10,
-        minRadius=35,
-        maxRadius=35
+        minRadius=4,
+        maxRadius=9
     )
+
+    # # detect holes
+    # circles = cv2.HoughCircles(
+    #     blurred_frame,
+    #     cv2.HOUGH_GRADIENT,
+    #     dp=1,
+    #     minDist=50,
+    #     param1=50,
+    #     param2=10,
+    #     minRadius=35, #202 for middle
+    #     maxRadius=35  #202 for middle
+    # )
 
     # draw circles into image
     if circles is not None:
@@ -111,9 +93,16 @@ for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
     else:
         print(f'number of circles: 0')
 
-    # cv2.imshow('Frame', frame)
+    #-----------------------------------------------------------------------------------
+    # # resize image
+    # display_width = 1000
+    # display_height = 1000
+    # resized_frame = cv2.resize(frame, (display_width, display_height))
+    # cv2.imshow('Frame', resized_frame)
     # cv2.waitKey(0)
     # exit()
+    #-----------------------------------------------------------------------------------
+
 
     # save circle positions into array
     POSITIONS.append(np.array(DUMMY))
@@ -125,7 +114,7 @@ for frame_number,frame_name in enumerate(tqdm(FRAME_NAMES)):
 
 
 # save positions in chosen shape
-write_positions_to_txt(POSITIONS, output_path+'holes.txt')
+write_positions_to_txt(POSITIONS, output_path+'positions.txt')
 
 # Release videowriter object
 video_writer.release()
