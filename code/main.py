@@ -4,14 +4,21 @@ import matplotlib.pyplot as plt
 import trackpy as tp
 import cv2
 from tqdm import tqdm
+from scipy.optimize import curve_fit
+
 
 output_path = 'D:/Exp_Soft_Matter/results/'
+plt.rcParams['font.size'] = '16'
+
 
 # useful lists
 FRAMES=[]
 PARTICLES=[]
 X_COORDS=[]
 Y_COORDS=[]
+
+
+
 
 # function reads txt file of particle positions and creates lists used for tracking
 def read_positions_from_txt(filename):
@@ -57,8 +64,8 @@ TIME_RADII_ANGLES_MEAN = []
 for particle_id, trajectory in grouped_trajectories:
     X_Y = trajectory.values[:,2:] - MIDDLE
     DUMMY=[] # for storing radii and angles
-    DUMMY_MEAN=[] # for storing radii and angles to get average value over 15 frames = 1/2 sec
-    R_PHI_MEAN=[] # for storing radii and angles to get average value over 15 frames = 1/2 sec
+    DUMMY_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
+    R_PHI_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
     for frame in range(len(X_Y)):
         # print(f'frame: {frame}')
         # radius
@@ -70,42 +77,29 @@ for particle_id, trajectory in grouped_trajectories:
             phi = 2*np.pi - np.arccos(X_Y[frame,0]/r)
         DUMMY.append((frame,r,phi))
         R_PHI_MEAN.append((r,phi))
-        # collect averages over 15 frames
-        if frame%15 == 14:
-
-            # print()
-            # print(f'NOW frame%15 = {frame%15}')
-            # print("R_PHI_MEAN: \n",R_PHI_MEAN)
+        # collect averages over 30 frames
+        if frame%30 == 29:
             r_phi_mean = np.zeros(2)
             r_phi_mean[0] = np.mean(np.array(R_PHI_MEAN)[:,0])
             r_phi_mean[1] = np.mean(np.array(R_PHI_MEAN)[:,1])
-            # print(f"r_phi_mean={r_phi_mean}")
-            DUMMY_MEAN.append((frame/30,r_phi_mean[0],r_phi_mean[1]))
+            DUMMY_MEAN.append((frame/30,r_phi_mean[0],r_phi_mean[1])) #time,radius,angle
+            R_PHI_MEAN=[] #reset list for new values to average
     FRAMES_RADII_ANGLES.append(DUMMY)
     TIME_RADII_ANGLES_MEAN.append(DUMMY_MEAN)
 
 TIME_RADII_ANGLES_MEAN = np.array(TIME_RADII_ANGLES_MEAN)
 
-# calculate change of angle
-# R_DPHI=[]
-# for f_r_phi in FRAMES_RADII_ANGLES:
-#     f_r_phi = np.array(f_r_phi)
-#     DUMMY=[]
-#     for i in range(len(f_r_phi)-30):
-#         dphi = f_r_phi[i+30,2] - f_r_phi[i,2] #phi difference after 1 second = 30 frames
-#         r = f_r_phi[i,1]
-#         DUMMY.append((r,dphi))
-#     R_DPHI.append(list(DUMMY))
+# # time plots of first 5 particles with averaged values
+# fig, ax = plt.subplots()
+# for particle,t_r_phi_mean in enumerate(TIME_RADII_ANGLES_MEAN):
+#     ax.plot(t_r_phi_mean[:,0],t_r_phi_mean[:,2])
+#     if particle == 100:
+#         break
 #
-# # average over radius and angular velocity
-# R_OMEGA_MEAN=[]
-# for r_dphi in R_DPHI:
-#     r_dphi = np.array(r_dphi)
-#     omega_mean = np.mean(r_dphi[:,1])
-#     r_mean = np.mean(r_dphi[:,0])
-#     R_OMEGA_MEAN.append((r_mean,omega_mean))
-# R_OMEGA_MEAN = np.array(R_OMEGA_MEAN)
-#
+# ax.set_xlabel('t [s]')
+# ax.set_ylabel('$\phi$ [rad]')
+# plt.show()
+# exit()
 
 # mean radius and mean frequency of each particle
 PARTICLE_R_OMEGA=[]
@@ -119,30 +113,56 @@ for t_r_phi_mean in TIME_RADII_ANGLES_MEAN:
     PARTICLE_R_OMEGA.append((r_mean_mean,omega))
 PARTICLE_R_OMEGA = np.array(PARTICLE_R_OMEGA)
 
-fig, ax = plt.subplots()
-ax.scatter(PARTICLE_R_OMEGA[:,0],PARTICLE_R_OMEGA[:,1])
 
+# exclude unrealistic data
+PARTICLE_R_OMEGA_FILTERED=[]
+for idx,r_omega in enumerate(PARTICLE_R_OMEGA):
+    if (r_omega[0] < 400 and r_omega[1] < 0.0005):
+        continue
+    if (r_omega[1] < 0.008):
+        PARTICLE_R_OMEGA_FILTERED.append(r_omega)
+PARTICLE_R_OMEGA_FILTERED = np.array(PARTICLE_R_OMEGA_FILTERED)
+
+# rearrange along radii
+sorted_indices = np.argsort(PARTICLE_R_OMEGA_FILTERED[:, 0])
+PARTICLE_R_OMEGA_FILTERED_SORTED = PARTICLE_R_OMEGA_FILTERED[sorted_indices]
+
+# loglog fit for exponent
+PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG = np.log(PARTICLE_R_OMEGA_FILTERED_SORTED)
+m,b = np.polyfit(PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,1],deg=1)
+    # result: exponent = -3.11 => -3
+
+# function for fitting y-intercept
+def omega(radius,y_intercept,r_0):
+    return y_intercept + r_0*radius**-3
+
+params = curve_fit(omega,PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED[:,1])
+y_intercept = params[0][0]
+r_0 = params[0][1]
+print(y_intercept,r_0)
+FIT_OMEGA=[]
+for r_omega in PARTICLE_R_OMEGA_FILTERED_SORTED:
+    FIT_OMEGA.append(omega(r_omega[0],y_intercept,r_0))
+FIT_OMEGA = np.array(FIT_OMEGA)
+
+fig, ax = plt.subplots()
+# ax.scatter(PARTICLE_R_OMEGA_FILTERED[:,0],PARTICLE_R_OMEGA_FILTERED[:,1])
+ax.scatter(PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED[:,1],s=15,zorder=5,label='data points')
+ax.plot(np.exp(PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0]),np.exp(m*PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0]+b),zorder=50,label='loglog linear',linestyle='--',c='k')
+ax.plot(PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],FIT_OMEGA,c='red',zorder=500,label='parameters fit')
+# info = f'exponent={round(m,2)}'
+info = f'exponent=-3\ny-intercept={round(y_intercept,2)}\n$r_0$={round(r_0,2)}'
+plt.text(300,4*10**-5,info)
+
+ax.legend()
+# ax.set_xscale('log')
+# ax.set_yscale('log')
 ax.set_xlabel('R [px]')
-ax.set_ylabel('$\omega$ [2/s]')
+ax.set_ylabel('$\omega$ [$s^{-1}$]')
+ax.set_title('Average angular velocity filtered results')
+# ax.set_title('Average angular velocity filtered results, loglog scaling')
 plt.show()
 
-exit()
 
-# plot of first 5 particles with averaged values
-fig, ax = plt.subplots()
-for particle,t_r_phi_mean in enumerate(TIME_RADII_ANGLES_MEAN):
-    ax.plot(t_r_phi_mean[:,0],t_r_phi_mean[:,2])
-    if particle == 5:
-        break
-plt.show()
-
+# # trajectories of ALL particles
 # tp.plot_traj(filtered_tracks)
-
-# convert into numpy array
-# TRAJECTORIES = filtered_tracks.values
-#
-#
-# fig, ax = plt.subplots()
-# # tp.plot_traj(filtered_tracks,ax=ax)
-#
-# plt.show()

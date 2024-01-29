@@ -7,3 +7,8 @@ Info:
 - radius of the disk, R=50 micron
 - radius of the particles r=1.4 micron
 - acquisition speed 30 fps 
+
+RESULTS:
+
+1)
+2) in pixels: omega = (r/54.02)^-3
