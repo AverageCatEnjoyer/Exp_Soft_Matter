@@ -59,13 +59,12 @@ filtered_tracks = tp.filter_stubs(linked_particles, min_track_length)
 
 # group by particles
 grouped_trajectories = filtered_tracks.groupby('particle')
-FRAMES_RADII_ANGLES = []
-TIME_RADII_ANGLES_MEAN = []
+TIME_RADII_ANGLES = []
 for particle_id, trajectory in grouped_trajectories:
     X_Y = trajectory.values[:,2:] - MIDDLE
     DUMMY=[] # for storing radii and angles
-    DUMMY_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
-    R_PHI_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
+    # DUMMY_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
+    # R_PHI_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
     for frame in range(len(X_Y)):
         # print(f'frame: {frame}')
         # radius
@@ -75,23 +74,22 @@ for particle_id, trajectory in grouped_trajectories:
             phi = np.arccos(X_Y[frame,0]/r)
         else:
             phi = 2*np.pi - np.arccos(X_Y[frame,0]/r)
-        DUMMY.append((frame,r,phi))
-        R_PHI_MEAN.append((r,phi))
+        DUMMY.append((frame/30,r,phi))
+        # R_PHI_MEAN.append((r,phi))
         # collect averages over 30 frames
-        if frame%30 == 29:
-            r_phi_mean = np.zeros(2)
-            r_phi_mean[0] = np.mean(np.array(R_PHI_MEAN)[:,0])
-            r_phi_mean[1] = np.mean(np.array(R_PHI_MEAN)[:,1])
-            DUMMY_MEAN.append((frame/30,r_phi_mean[0],r_phi_mean[1])) #time,radius,angle
-            R_PHI_MEAN=[] #reset list for new values to average
-    FRAMES_RADII_ANGLES.append(DUMMY)
-    TIME_RADII_ANGLES_MEAN.append(DUMMY_MEAN)
+        # if frame%30 == 29:
+        #     r_phi_mean = np.zeros(2)
+        #     r_phi_mean[0] = np.mean(np.array(R_PHI_MEAN)[:,0])
+        #     r_phi_mean[1] = np.mean(np.array(R_PHI_MEAN)[:,1])
+        #     DUMMY_MEAN.append((frame/30,r_phi_mean[0],r_phi_mean[1])) #time,radius,angle
+        #     R_PHI_MEAN=[] #reset list for new values to average
+    TIME_RADII_ANGLES.append(DUMMY)
 
-TIME_RADII_ANGLES_MEAN = np.array(TIME_RADII_ANGLES_MEAN)
+TIME_RADII_ANGLES = np.array(TIME_RADII_ANGLES)
 
 # # time plots of first 5 particles with averaged values
 # fig, ax = plt.subplots()
-# for particle,t_r_phi_mean in enumerate(TIME_RADII_ANGLES_MEAN):
+# for particle,t_r_phi_mean in enumerate(TIME_RADII_ANGLES):
 #     ax.plot(t_r_phi_mean[:,0],t_r_phi_mean[:,2])
 #     if particle == 100:
 #         break
@@ -101,16 +99,24 @@ TIME_RADII_ANGLES_MEAN = np.array(TIME_RADII_ANGLES_MEAN)
 # plt.show()
 # exit()
 
+
+
+# dt = 1/30
+# DPHI = TIME_RADII_ANGLES[:,1:,2] - TIME_RADII_ANGLES[:,:-1,2]
+# TIME_OMEGA = DPHI/dt
+
 # mean radius and mean frequency of each particle
 PARTICLE_R_OMEGA=[]
-for t_r_phi_mean in TIME_RADII_ANGLES_MEAN:
-    r_mean_mean = np.mean(t_r_phi_mean[:,1])
-    for i in range(len(t_r_phi_mean)-1):
-        DPHI = np.zeros(len(t_r_phi_mean)-1)
-        dphi = t_r_phi_mean[i+1,2] - t_r_phi_mean[i,2] #phi difference after 1/2 seconds
-        DPHI[i] = dphi
+for t_r_phi_mean in TIME_RADII_ANGLES:
+    r = np.mean(t_r_phi_mean[:,1])
+    # for i in range(len(t_r_phi_mean)-1):
+    #     DPHI = np.zeros(len(t_r_phi_mean)-1)
+    #     dphi = t_r_phi_mean[i+1,2] - t_r_phi_mean[i,2] #phi difference after 1/2 seconds
+    #     DPHI[i] = dphi
+
+    DPHI = TIME_RADII_ANGLES[:,1:,2] - TIME_RADII_ANGLES[:,:-1,2]
     omega = np.mean(np.abs(DPHI))
-    PARTICLE_R_OMEGA.append((r_mean_mean,omega))
+    PARTICLE_R_OMEGA.append((r,omega))
 PARTICLE_R_OMEGA = np.array(PARTICLE_R_OMEGA)
 
 
