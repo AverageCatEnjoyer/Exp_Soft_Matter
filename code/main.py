@@ -7,8 +7,8 @@ from tqdm import tqdm
 from scipy.optimize import curve_fit
 
 
-# output_path = 'D:/Exp_Soft_Matter/results/'
-output_path = '/local/mroot/Exp_Soft_Matter/results/'
+output_path = 'D:/Exp_Soft_Matter/results/'
+# output_path = '/local/mroot/Exp_Soft_Matter/results/'
 plt.rcParams['font.size'] = '16'
 
 
@@ -60,12 +60,12 @@ filtered_tracks = tp.filter_stubs(linked_particles, min_track_length)
 
 # group by particles
 grouped_trajectories = filtered_tracks.groupby('particle')
+
+# transform (x,y) values to polar coords
 TIME_RADII_ANGLES = []
 for particle_id, trajectory in grouped_trajectories:
     X_Y = trajectory.values[:,2:] - MIDDLE
     DUMMY=[] # for storing radii and angles
-    # DUMMY_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
-    # R_PHI_MEAN=[] # for storing radii and angles to get average value over 30 frames = 1 sec
     for frame in range(len(X_Y)):
         # print(f'frame: {frame}')
         # radius
@@ -86,12 +86,11 @@ for particle_id, trajectory in grouped_trajectories:
         #     R_PHI_MEAN=[] #reset list for new values to average
     TIME_RADII_ANGLES.append(DUMMY)
 
-# TIME_RADII_ANGLES = np.array(TIME_RADII_ANGLES)
 
 # # time plots of first 5 particles with averaged values
 # fig, ax = plt.subplots()
-# for particle,t_r_phi_mean in enumerate(TIME_RADII_ANGLES):
-#     ax.plot(t_r_phi_mean[:,0],t_r_phi_mean[:,2])
+# for particle,t_r_phi in enumerate(TIME_RADII_ANGLES):
+#     ax.plot(t_r_phi[:,0],t_r_phi[:,2])
 #     if particle == 100:
 #         break
 #
@@ -102,22 +101,22 @@ for particle_id, trajectory in grouped_trajectories:
 
 
 
-# dt = 1/30
 # DPHI = TIME_RADII_ANGLES[:,1:,2] - TIME_RADII_ANGLES[:,:-1,2]
 # TIME_OMEGA = DPHI/dt
 
 # mean radius and mean frequency of each particle
+dt = 1/30
 PARTICLE_R_OMEGA=[]
-for t_r_phi_mean in TIME_RADII_ANGLES:
-    t_r_phi_mean = np.array(t_r_phi_mean)
-    r = np.mean(t_r_phi_mean[:,1])
-    # for i in range(len(t_r_phi_mean)-1):
-    #     DPHI = np.zeros(len(t_r_phi_mean)-1)
-    #     dphi = t_r_phi_mean[i+1,2] - t_r_phi_mean[i,2] #phi difference after 1/2 seconds
+for t_r_phi in TIME_RADII_ANGLES:
+    t_r_phi = np.array(t_r_phi)
+    r = np.mean(t_r_phi[:,1])
+    # for i in range(len(t_r_phi)-1):
+    #     DPHI = np.zeros(len(t_r_phi)-1)
+    #     dphi = t_r_phi[i+1,2] - t_r_phi[i,2] #phi difference after 1/2 seconds
     #     DPHI[i] = dphi
 
-    DPHI = t_r_phi_mean[1:,2] - t_r_phi_mean[:-1,2]
-    omega = np.mean(np.abs(DPHI))
+    DPHI = t_r_phi[1:,2] - t_r_phi[:-1,2]
+    omega = np.mean(np.abs(DPHI))/dt
     PARTICLE_R_OMEGA.append((r,omega))
 PARTICLE_R_OMEGA = np.array(PARTICLE_R_OMEGA)
 
@@ -127,7 +126,7 @@ PARTICLE_R_OMEGA_FILTERED=[]
 for idx,r_omega in enumerate(PARTICLE_R_OMEGA):
     # if (r_omega[0] < 400 and r_omega[1] < 0.0005):
     #     continue
-    if (r_omega[1] < 0.01):
+    if (r_omega[1] < 0.3):
         PARTICLE_R_OMEGA_FILTERED.append(r_omega)
 PARTICLE_R_OMEGA_FILTERED = np.array(PARTICLE_R_OMEGA_FILTERED)
 # PARTICLE_R_OMEGA_FILTERED = PARTICLE_R_OMEGA
@@ -141,13 +140,14 @@ PARTICLE_R_OMEGA_FILTERED_SORTED = PARTICLE_R_OMEGA_FILTERED[sorted_indices]
 threshold = (PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]<600) & (PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]>300)
 PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG = np.log(PARTICLE_R_OMEGA_FILTERED_SORTED[threshold])
 m,b = np.polyfit(PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,1],deg=1)
-    # result: exponent = -3.11 => -3
+
 print(m,b)
 # function for fitting y-intercept
 def omega(radius,y_intercept,r_0):
     return y_intercept + r_0*radius**-3
 
-params = curve_fit(omega,PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED[:,1])
+params = curve_fit(omega,PARTICLE_R_OMEGA_FILTERED_SORTED[threshold,0],PARTICLE_R_OMEGA_FILTERED_SORTED[threshold,1])
+# params = curve_fit(omega,PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED[:,1])
 y_intercept = params[0][0]
 r_0 = params[0][1]
 print(y_intercept,r_0)
@@ -156,11 +156,11 @@ for r_omega in PARTICLE_R_OMEGA_FILTERED_SORTED:
     FIT_OMEGA.append(omega(r_omega[0],y_intercept,r_0))
 FIT_OMEGA = np.array(FIT_OMEGA)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(11,9))
 # ax.scatter(PARTICLE_R_OMEGA_FILTERED[:,0],PARTICLE_R_OMEGA_FILTERED[:,1])
 ax.scatter(PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED[:,1],s=15,zorder=5,label='data points')
 ax.plot(np.exp(PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0]),np.exp(m*PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0]+b),zorder=50,label='loglog linear',linestyle='--',c='k')
-# ax.plot(PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],FIT_OMEGA,c='red',zorder=500,label='parameters fit')
+ax.plot(PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],FIT_OMEGA,c='red',zorder=500,label='parameters fit')
 # info = f'exponent={round(m,2)}'
 info = f'exponent=-3\ny-intercept={round(y_intercept,2)}\n$r_0$={round(r_0,2)}'
 plt.text(300,4*10**-5,info)
