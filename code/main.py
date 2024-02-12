@@ -39,6 +39,7 @@ def read_positions_from_txt(filename):
 # -----------------------------------------------------------------------------------------
 
 MIDDLE = (1006.23,987.48) #x,y values of middle point
+px_to_micron = 50/397.6
 
 # read_positions_from_txt(output_path+'holes.txt')
 read_positions_from_txt(output_path+'particles1.txt')
@@ -57,6 +58,14 @@ linked_particles = tp.link_df(PARTICLE_DATA, search_range=max_displacement, memo
 # Filter tracks based on minimum length
 min_track_length = 890
 filtered_tracks = tp.filter_stubs(linked_particles, min_track_length)
+
+
+# -------------------------------------------
+# # trajectories of ALL particles
+# tp.plot_traj(filtered_tracks)
+# exit()
+# -------------------------------------------
+
 
 # group by particles
 grouped_trajectories = filtered_tracks.groupby('particle')
@@ -156,7 +165,10 @@ for r_omega in PARTICLE_R_OMEGA_FILTERED_SORTED:
     FIT_OMEGA.append(omega(r_omega[0],y_intercept,r_0))
 FIT_OMEGA = np.array(FIT_OMEGA)
 
-fig, ax = plt.subplots(figsize=(11,9))
+
+
+
+fig, ax = plt.subplots(figsize=(11,11))
 # ax.scatter(PARTICLE_R_OMEGA_FILTERED[:,0],PARTICLE_R_OMEGA_FILTERED[:,1])
 ax.scatter(PARTICLE_R_OMEGA_FILTERED_SORTED[:,0],PARTICLE_R_OMEGA_FILTERED_SORTED[:,1],s=15,zorder=5,label='data points')
 ax.plot(np.exp(PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0]),np.exp(m*PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG[:,0]+b),zorder=50,label='loglog linear',linestyle='--',c='k')
@@ -166,14 +178,10 @@ info = f'exponent=-3\ny-intercept={round(y_intercept,2)}\n$r_0$={round(r_0,2)}'
 plt.text(300,4*10**-5,info)
 
 ax.legend()
-ax.set_xscale('log')
-ax.set_yscale('log')
 ax.set_xlabel('R [px]')
 ax.set_ylabel('$\omega$ [$s^{-1}$]')
-ax.set_title('Average angular velocity filtered results')
-# ax.set_title('Average angular velocity filtered results, loglog scaling')
+ax.set_xscale('log')
+ax.set_yscale('log')
+# ax.set_title('Average angular velocity results')
+ax.set_title('average angular velocity results, loglog scaling $r \in [300,600]$px ')
 plt.show()
-
-
-# # trajectories of ALL particles
-# tp.plot_traj(filtered_tracks)
