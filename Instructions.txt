@@ -8,8 +8,14 @@ Info:
 - radius of the particles r=1.4 micron
 - acquisition speed 30 fps 
 
-RESULTS:
--rescale from pixel to micron: 50 micron = 397.6 px
 
-1)
+----------------------------------
+
+
+RESULTS:
+-rescale from pixel to micron: 100 micron = 397.6 px
+
+1) 6 oscillations for a total of 30s => 5s per oscillation => f = 1/5 1/s
+
 2)
+omega ~ 0.63 1/s

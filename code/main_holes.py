@@ -48,8 +48,8 @@ def read_positions_from_txt(filename):
 # -----------------------------------------------------------------------------------------
 
 
-# read_positions_from_txt(output_path+'holes.txt')
-read_positions_from_txt(output_path+'particles1.txt')
+read_positions_from_txt(output_path+'holes.txt')
+# read_positions_from_txt(output_path+'particles1.txt')
 
 
 # create particle dataframe
@@ -63,7 +63,7 @@ PARTICLE_DATA = pd.DataFrame({'frame': FRAMES, 'particle': PARTICLES, 'x': X_COO
 
 
 # maximum displacement to link particles
-max_displacement = 20
+max_displacement = 5
 
 # link particles across frames (memory = number of frames for a particle to disappear before being excluded)
 linked_particles = tp.link_df(PARTICLE_DATA, search_range=max_displacement, memory=1)
@@ -105,22 +105,81 @@ for particle_id, trajectory in grouped_trajectories:
     TIME_RADII_ANGLES.append(DUMMY)
 
 
-# mean radius and mean frequency of each particle
-for t_r_phi in TIME_RADII_ANGLES:
-    t_r_phi = np.array(t_r_phi)
-    r_mean = np.mean(t_r_phi[:,1]) #mean radius
-    DPHI = t_r_phi[1:,2] - t_r_phi[:-1,2]
-    omega_mean = np.mean(np.abs(DPHI))/dt #mean angular velocity
-    PARTICLE_R_OMEGA.append((r_mean,omega_mean))
-PARTICLE_R_OMEGA = np.array(PARTICLE_R_OMEGA)
+# # mean ang velocity and mean frequency of disc
+# for t_r_phi in TIME_RADII_ANGLES:
+#     t_r_phi = np.array(t_r_phi)
+#     r_mean = np.mean(t_r_phi[:,1]) #mean radius
+#     DPHI = t_r_phi[1:,2] - t_r_phi[:-1,2]
+#     omega_mean = np.mean(np.abs(DPHI))/dt #mean angular velocity
+#     PARTICLE_R_OMEGA.append((r_mean,omega_mean))
+# PARTICLE_R_OMEGA = np.array(PARTICLE_R_OMEGA)
+# print(PARTICLE_R_OMEGA)
+# omega = np.mean(PARTICLE_R_OMEGA[:,1])
+# f = omega/(2*np.pi)
+# print(omega,f)
 
 
-# exclude unrealistic data
-for idx,r_omega in enumerate(PARTICLE_R_OMEGA):
-    if (r_omega[1] < 0.7):
-        PARTICLE_R_OMEGA_FILTERED.append(r_omega)
-PARTICLE_R_OMEGA_FILTERED = np.array(PARTICLE_R_OMEGA_FILTERED)
-# PARTICLE_R_OMEGA_FILTERED = PARTICLE_R_OMEGA
+# average over frames to reduce noise
+MEAN_TIME_RADII_ANGLES = []
+avg_number=5
+for T_R_PHI in TIME_RADII_ANGLES:
+    DUMMY=[]
+    for idx,t_r_phi in zip(range(len(T_R_PHI)-5),T_R_PHI):
+        DUMMY_AVG=[]
+        for i in range(avg_number):
+            DUMMY_AVG.append(T_R_PHI[idx+1,2])
+        DUMMY.append(np.mean(t_r_phi[0],t_r_phi[1],DUMMY_AVG))
+    MEAN_TIME_RADII_ANGLES.append(DUMMY)
+
+
+# FIX INDEX 
+# exit()
+print(MEAN_TIME_RADII_ANGLES[0])
+# frequency from disc
+TIME_STAMPS = []
+for T_R_PHI in MEAN_TIME_RADII_ANGLES:
+    DUMMY=[]
+    phi_0 = T_R_PHI[0][2]
+    # print(phi_0)
+    for t_r_phi in T_R_PHI:
+        # print(np.abs(t_r_phi[2]/phi_0)-1)
+        if np.abs(t_r_phi[2]/phi_0-1) < 6*10**-3:
+            DUMMY.append(t_r_phi[0])
+    TIME_STAMPS.append(DUMMY)
+
+print(TIME_STAMPS)
+print(len(TIME_STAMPS[0]))
+print(len(TIME_STAMPS[1]))
+
+
+exit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # rearrange along radii
@@ -138,7 +197,8 @@ ANG_VELOCITY = PARTICLE_R_OMEGA_FILTERED_SORTED[:,1]
 
 
 # loglog fit for exponent
-threshold = (RADIUS>70) & (RADIUS<150)
+threshold = (PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]<600) & (PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]>300)
+# PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG = np.log(PARTICLE_R_OMEGA_FILTERED_SORTED[threshold])
 RADIUS_LOG = np.log(RADIUS[threshold])
 ANG_VELOCITY_LOG = np.log(ANG_VELOCITY[threshold])
 m,b = np.polyfit(RADIUS_LOG,ANG_VELOCITY_LOG,deg=1)
@@ -146,44 +206,35 @@ m,b = np.polyfit(RADIUS_LOG,ANG_VELOCITY_LOG,deg=1)
 
 print(m,b)
 
-
 # parameter fit with extracted exponent
 def omega(radius,y_intercept,r_0):
-    radius = radius/r_0
-    return y_intercept + radius**-3
+    return y_intercept + r_0*radius**-3
 
 params = curve_fit(omega,RADIUS[threshold],ANG_VELOCITY[threshold])
 y_intercept = params[0][0]
 r_0 = params[0][1]
+print(y_intercept,r_0)
 
 for radius in RADIUS:
-    FIT_OMEGA.append(omega(radius,0,r_0))
+    FIT_OMEGA.append(omega(radius,y_intercept,r_0))
 FIT_OMEGA = np.array(FIT_OMEGA)
-
-
-print(y_intercept,r_0)
 
 
 # plotting
 fig, ax = plt.subplots(figsize=(16,9))
 ax.scatter(RADIUS,ANG_VELOCITY,s=15,zorder=5,label='data points')
-# ax.plot(np.exp(RADIUS_LOG),np.exp(m*RADIUS_LOG+b),zorder=50,label='loglog linear',linestyle='--',c='k')
+ax.plot(np.exp(RADIUS_LOG),np.exp(m*RADIUS_LOG+b),zorder=50,label='loglog linear',linestyle='--',c='k')
 ax.plot(RADIUS,FIT_OMEGA,c='red',zorder=500,label='parameters fit')
-
+# info = f'exponent={round(m,2)}'
 info = f'exponent=-3\n$r_0$={round(r_0,2)}'
-ax.set_title('average angular velocity results')
-ax.set_xlabel('R [$\mu m$]')
-ax.set_ylabel('$\omega$ [$s^{-1}$]')
+plt.text(150,ANG_VELOCITY[0],info)
+
 ax.legend()
-
-plt.text(200,0.58,info)
-
-# ---------log---------
+ax.set_xlabel('R [$\mu m$]')
+# ax.set_xlabel('R [px]')
+ax.set_ylabel('$\omega$ [$s^{-1}$]')
 # ax.set_xscale('log')
 # ax.set_yscale('log')
+ax.set_title('Average angular velocity results')
 # ax.set_title('average angular velocity results, loglog scaling')
-# info = f'exponent={round(m,2)}\n$r_0$={round(r_0,2)}'
-# plt.text(150,0.5,info)
-
-
 plt.show()
