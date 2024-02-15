@@ -17,8 +17,8 @@ PARTICLES=[]
 X_COORDS=[]
 Y_COORDS=[]
 TIME_RADII_ANGLES = []
-PARTICLE_R_OMEGA=[]
-PARTICLE_R_OMEGA_FILTERED=[]
+HOLE_R_OMEGA=[]
+HOLE_R_OMEGA_FILTERED=[]
 FIT_OMEGA=[]
 
 
@@ -105,52 +105,51 @@ for particle_id, trajectory in grouped_trajectories:
     TIME_RADII_ANGLES.append(DUMMY)
 
 
-# # mean ang velocity and mean frequency of disc
-# for t_r_phi in TIME_RADII_ANGLES:
-#     t_r_phi = np.array(t_r_phi)
-#     r_mean = np.mean(t_r_phi[:,1]) #mean radius
-#     DPHI = t_r_phi[1:,2] - t_r_phi[:-1,2]
-#     omega_mean = np.mean(np.abs(DPHI))/dt #mean angular velocity
-#     PARTICLE_R_OMEGA.append((r_mean,omega_mean))
-# PARTICLE_R_OMEGA = np.array(PARTICLE_R_OMEGA)
-# print(PARTICLE_R_OMEGA)
-# omega = np.mean(PARTICLE_R_OMEGA[:,1])
+# average over some frames to reduce noise [old]
+# MEAN_TIME_RADII_ANGLES = []
+# avg_number=10
+# for T_R_PHI in TIME_RADII_ANGLES: #for each hole
+#     T_R_PHI = np.array(T_R_PHI)
+#     DUMMY=[]
+#     for idx in range(len(T_R_PHI)-avg_number):
+#         DUMMY_AVG=[]
+#         for i in range(avg_number):
+#             DUMMY_AVG.append(T_R_PHI[idx+1,2])
+#         DUMMY.append((T_R_PHI[idx,0],T_R_PHI[idx,1],np.mean(DUMMY_AVG)))
+#     MEAN_TIME_RADII_ANGLES.append(DUMMY)
+# MEAN_TIME_RADII_ANGLES = np.array(MEAN_TIME_RADII_ANGLES)
+
+
+
+
+T_DPHI=[]
+# change of angle
+skip_num = 10 # to avoid noise
+TIMES_OF_TURN=[]
+for t_r_phi in TIME_RADII_ANGLES: #for each hole
+    t_r_phi = np.array(t_r_phi)
+    r_mean = np.mean(t_r_phi[:,1]) #mean radius for comparison
+    # for idx in range(len(t_r_phi)):
+    #     if idx%skip_num:
+    #         dphi = t_r_phi[idx,2] - t_r_phi[idx-skip_num,2]
+    #         T_DPHI.append((t_r_phi[idx,0],dphi))
+    # T_DPHI = np.array(T_DPHI)
+    DPHI_skipped = t_r_phi[skip_num:,2] - t_r_phi[:-skip_num,2]
+    DPHI = t_r_phi[1:,2] - t_r_phi[:-1,2]
+    for dphi in range(len(DPHI_skipped)-1):
+        if (DPHI_skipped[dphi] != 0 and (DPHI_skipped[dphi+1]/DPHI_skipped[dphi]) < 0):
+            TIMES_OF_TURN.append(t_r_phi[dphi,0])
+    omega_mean = np.mean(np.abs(DPHI))/dt #mean angular velocity for comparison
+    HOLE_R_OMEGA.append((r_mean,omega_mean))
+HOLE_R_OMEGA = np.array(HOLE_R_OMEGA)
+TIMES_OF_TURN = np.array(TIMES_OF_TURN)
+TIMES_BETWEEN_TURNS = TIMES_OF_TURN[1:] - TIMES_OF_TURN[:-1]
+time_to_turn = np.mean(TIMES_BETWEEN_TURNS)
+# omega = np.mean(HOLE_R_OMEGA[:,1])
 # f = omega/(2*np.pi)
 # print(omega,f)
 
-
-# average over frames to reduce noise
-MEAN_TIME_RADII_ANGLES = []
-avg_number=5
-for T_R_PHI in TIME_RADII_ANGLES:
-    DUMMY=[]
-    for idx,t_r_phi in zip(range(len(T_R_PHI)-5),T_R_PHI):
-        DUMMY_AVG=[]
-        for i in range(avg_number):
-            DUMMY_AVG.append(T_R_PHI[idx+1,2])
-        DUMMY.append(np.mean(t_r_phi[0],t_r_phi[1],DUMMY_AVG))
-    MEAN_TIME_RADII_ANGLES.append(DUMMY)
-
-
-# FIX INDEX 
-# exit()
-print(MEAN_TIME_RADII_ANGLES[0])
-# frequency from disc
-TIME_STAMPS = []
-for T_R_PHI in MEAN_TIME_RADII_ANGLES:
-    DUMMY=[]
-    phi_0 = T_R_PHI[0][2]
-    # print(phi_0)
-    for t_r_phi in T_R_PHI:
-        # print(np.abs(t_r_phi[2]/phi_0)-1)
-        if np.abs(t_r_phi[2]/phi_0-1) < 6*10**-3:
-            DUMMY.append(t_r_phi[0])
-    TIME_STAMPS.append(DUMMY)
-
-print(TIME_STAMPS)
-print(len(TIME_STAMPS[0]))
-print(len(TIME_STAMPS[1]))
-
+print(time_to_turn)
 
 exit()
 
@@ -183,8 +182,8 @@ exit()
 
 
 # rearrange along radii
-sorted_indices = np.argsort(PARTICLE_R_OMEGA_FILTERED[:, 0])
-PARTICLE_R_OMEGA_FILTERED_SORTED = PARTICLE_R_OMEGA_FILTERED[sorted_indices]
+sorted_indices = np.argsort(HOLE_R_OMEGA_FILTERED[:, 0])
+HOLE_R_OMEGA_FILTERED_SORTED = HOLE_R_OMEGA_FILTERED[sorted_indices]
 
 
 # -----------------------------------------------------------------------------------------
@@ -192,13 +191,13 @@ PARTICLE_R_OMEGA_FILTERED_SORTED = PARTICLE_R_OMEGA_FILTERED[sorted_indices]
 
 
 # final data
-RADIUS = px_to_micron*PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]
-ANG_VELOCITY = PARTICLE_R_OMEGA_FILTERED_SORTED[:,1]
+RADIUS = px_to_micron*HOLE_R_OMEGA_FILTERED_SORTED[:,0]
+ANG_VELOCITY = HOLE_R_OMEGA_FILTERED_SORTED[:,1]
 
 
 # loglog fit for exponent
-threshold = (PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]<600) & (PARTICLE_R_OMEGA_FILTERED_SORTED[:,0]>300)
-# PARTICLE_R_OMEGA_FILTERED_SORTED_LOGLOG = np.log(PARTICLE_R_OMEGA_FILTERED_SORTED[threshold])
+threshold = (HOLE_R_OMEGA_FILTERED_SORTED[:,0]<600) & (HOLE_R_OMEGA_FILTERED_SORTED[:,0]>300)
+# HOLE_R_OMEGA_FILTERED_SORTED_LOGLOG = np.log(HOLE_R_OMEGA_FILTERED_SORTED[threshold])
 RADIUS_LOG = np.log(RADIUS[threshold])
 ANG_VELOCITY_LOG = np.log(ANG_VELOCITY[threshold])
 m,b = np.polyfit(RADIUS_LOG,ANG_VELOCITY_LOG,deg=1)
