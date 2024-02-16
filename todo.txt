@@ -1,4 +1,0 @@
--understand task
--understand libraries/methods
--code
-
