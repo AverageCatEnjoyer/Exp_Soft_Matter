@@ -18,4 +18,4 @@ RESULTS:
 1) 6 oscillations for a total of 30s => 5s per oscillation => f = 1/5 1/s
 	omega ~ 0.63 1/s
 
-2) w(R) = (R/r_0)^-3, r_0 = 39.16µm
+2) w(R) = (R/r_0)^-3, r_0 = 39.16

@@ -139,6 +139,7 @@ ANG_VELOCITY = PARTICLE_R_OMEGA_FILTERED_SORTED[:,1]
 
 # loglog fit for exponent
 threshold = (RADIUS>70) & (RADIUS<150)
+# threshold = (RADIUS>60) & (RADIUS<150)
 RADIUS_LOG = np.log(RADIUS[threshold])
 ANG_VELOCITY_LOG = np.log(ANG_VELOCITY[threshold])
 m,b = np.polyfit(RADIUS_LOG,ANG_VELOCITY_LOG,deg=1)
@@ -170,24 +171,26 @@ print('\n-----------------------------------------------------------------------
 # plotting
 fig, ax = plt.subplots(figsize=(16,9))
 ax.scatter(RADIUS,ANG_VELOCITY,s=15,zorder=5,label='data points')
-# ax.plot(np.exp(RADIUS_LOG),np.exp(m*RADIUS_LOG+b),zorder=50,label='loglog linear',linestyle='--',c='k')
-ax.plot(RADIUS,FIT_OMEGA,c='red',zorder=500,label='parameters fit')
 
 info = f'exponent=-3\n$r_0$={round(r_0,2)}'
 ax.set_title('average angular velocity results')
 ax.set_xlabel('R [$\mu m$]')
 ax.set_ylabel('$\omega$ [$s^{-1}$]')
-ax.legend()
+
+# ---------linear---------
 ax.grid()
 plt.text(200,0.58,info)
+ax.plot(RADIUS,FIT_OMEGA,c='red',zorder=500,label='parameters fit')
+
 
 # ---------log---------
+# ax.plot(np.exp(RADIUS_LOG),np.exp(m*RADIUS_LOG+b),zorder=50,label='loglog linear',linestyle='--',c='k')
 # ax.set_xscale('log')
 # ax.set_yscale('log')
 # ax.set_title('average angular velocity results, loglog scaling')
 # info = f'exponent={round(m,2)}'
-# # info = f'exponent={round(m,2)}\n$r_0$={round(r_0,2)}'
 # plt.text(150,0.5,info)
 
 
+ax.legend()
 plt.show()
