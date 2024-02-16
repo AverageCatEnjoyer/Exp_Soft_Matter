@@ -143,8 +143,9 @@ RADIUS_LOG = np.log(RADIUS[threshold])
 ANG_VELOCITY_LOG = np.log(ANG_VELOCITY[threshold])
 m,b = np.polyfit(RADIUS_LOG,ANG_VELOCITY_LOG,deg=1)
 
-
-print(m,b)
+print('\n\n\n-----------------------------LOGLOG-FIT------------------------------\n')
+print(f'exponent={m}')
+print('\n---------------------------------------------------------------------\n')
 
 
 # parameter fit with extracted exponent
@@ -160,8 +161,10 @@ for radius in RADIUS:
     FIT_OMEGA.append(omega(radius,0,r_0))
 FIT_OMEGA = np.array(FIT_OMEGA)
 
+print('\n-----------------------------PARAMETER-FIT-----------------------------\n')
+print(f'y-intercept={y_intercept}, scaling_parameter={r_0}')
+print('\n-----------------------------------------------------------------------\n')
 
-print(y_intercept,r_0)
 
 
 # plotting
@@ -175,14 +178,15 @@ ax.set_title('average angular velocity results')
 ax.set_xlabel('R [$\mu m$]')
 ax.set_ylabel('$\omega$ [$s^{-1}$]')
 ax.legend()
-
+ax.grid()
 plt.text(200,0.58,info)
 
 # ---------log---------
 # ax.set_xscale('log')
 # ax.set_yscale('log')
 # ax.set_title('average angular velocity results, loglog scaling')
-# info = f'exponent={round(m,2)}\n$r_0$={round(r_0,2)}'
+# info = f'exponent={round(m,2)}'
+# # info = f'exponent={round(m,2)}\n$r_0$={round(r_0,2)}'
 # plt.text(150,0.5,info)
 
 

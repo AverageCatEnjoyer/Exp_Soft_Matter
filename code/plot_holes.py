@@ -62,16 +62,16 @@ for particle_id, trajectory in grouped_trajectories:
     for i in range(len(X_Y)):
         # find angle
         r = np.sqrt(X_Y[i,0]**2 + X_Y[i,1]**2)
-        print()
-        print(r,X_Y[i])
+        # print()
+        # print(r,X_Y[i])
         if X_Y[i,1] >= 0:
-            print(f'y>0')
+            # print(f'y>0')
             phi = np.arccos(X_Y[i,0]/r)
         else:
-            print(f'y<0')
-            print(f'arccos={np.arccos(X_Y[i,0]/r)}')
+            # print(f'y<0')
+            # print(f'arccos={np.arccos(X_Y[i,0]/r)}')
             phi = 2*np.pi - np.arccos(X_Y[i,0]/r)
-        print(phi)
+        # print(phi)
         DUMMY.append((i,r,phi))
     FRAMES_RADII_ANGLES.append(DUMMY)
 # exit()
@@ -110,7 +110,7 @@ R_OMEGA_MEAN = np.array(R_OMEGA_MEAN)
 AXIS=np.linspace(-100,100,10)
 ZEROS=np.zeros(10)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(11,11))
 ax.plot(AXIS,ZEROS,c='gray',alpha=0.7,linestyle='--')
 ax.plot(ZEROS,AXIS,c='gray',alpha=0.7,linestyle='--')
 for particle_id, trajectory in grouped_trajectories:
@@ -120,6 +120,7 @@ for particle_id, trajectory in grouped_trajectories:
 ax.set_xlabel('x [px]')
 ax.set_ylabel('y [px]')
 # tp.plot_traj(filtered_tracks,ax=ax)
+ax.set_aspect(1)
 ax.grid()
 plt.show()
 # -----------------------------------------------------------------------------------------
