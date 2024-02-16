@@ -6,7 +6,9 @@ from scipy.optimize import curve_fit
 from tqdm import tqdm
 
 
-output_path = 'D:/Exp_Soft_Matter/results/'
+
+output_path = 'C:/Github/Exp_Soft_Matter/results/'
+# output_path = 'D:/Exp_Soft_Matter/results/'
 # output_path = '/local/mroot/Exp_Soft_Matter/results/'
 plt.rcParams['font.size'] = '16'
 

@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 plt.rcParams['font.size'] = '16'
 
-
-output_path = 'D:/Exp_Soft_Matter/results/'
+output_path = 'C:/Github/Exp_Soft_Matter/results/'
+# output_path = 'D:/Exp_Soft_Matter/results/'
 # output_path = '/local/mroot/Exp_Soft_Matter/results/'
 
 
@@ -138,6 +138,8 @@ for turn_times in TIMES_OF_TURN:
 print('\n-----------------------------TIME-PASSED-BETWEEN-DIRECTION-CHANGE-------------------------------\n')
 for idx,TIMES in enumerate(TIMES_BETWEEN_TURNS):
     print(f'hole Nr.{idx+1}: {TIMES}')
+    print()
+
 print()
 print(f'mean angular velocity of disc: {omega} s^-1')
 print('\n------------------------------------------------------------------------------------------------\n')

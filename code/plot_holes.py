@@ -5,7 +5,9 @@ import trackpy as tp
 import cv2
 from tqdm import tqdm
 
-output_path = 'D:/Exp_Soft_Matter/results/'
+# output_path = 'D:/Exp_Soft_Matter/results/'
+output_path = 'C:/Github/Exp_Soft_Matter/results/'
+
 
 # useful lists
 FRAMES=[]

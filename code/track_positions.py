@@ -9,9 +9,12 @@ import os
 # output_path = '/local/mroot/Exp_Soft_Matter/results/video.mp4'
 
 # home
-frames_directory = 'D:/Exp_Soft_Matter/images'
-output_path = 'D:/Exp_Soft_Matter/results/'
+# frames_directory = 'D:/Exp_Soft_Matter/images'
+# output_path = 'D:/Exp_Soft_Matter/results/'
 
+#laptop
+frames_directory = 'C:/Github/Exp_Soft_Matter/images'
+output_path = 'C:/Github/Exp_Soft_Matter/results/'
 
 def write_positions_to_txt(frames, filename):
     with open(filename, 'w') as file:

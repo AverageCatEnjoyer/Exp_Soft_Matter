@@ -4,7 +4,8 @@ import cv2
 import numpy as np
 
 # load the image
-image = cv2.imread('D:/Exp_Soft_Matter/images/Exercise0000.jpg')
+# image = cv2.imread('D:/Exp_Soft_Matter/images/Exercise0000.jpg')
+image = cv2.imread('C:/Github/Exp_Soft_Matter/images/Exercise0000.jpg')
 gray = image[:,:,0]
 
 # blur to reduce noise
